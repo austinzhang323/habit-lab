@@ -28,6 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       style={{ colorScheme: "light" }}
+      data-scroll-behavior="smooth"
     >
       <body className="min-h-screen flex flex-col bg-white dark:bg-black">
         <Header />
