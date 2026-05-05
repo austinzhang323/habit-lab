@@ -1,0 +1,67 @@
+// Starter models — replace with your own
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum HabitCategory {
+  HEALTH
+  FITNESS
+  MINDFULNESS
+  PRODUCTIVITY
+  LEARNING
+  OTHER
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Habit {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  frequency   HabitFrequency  @default(DAILY)
+  category    HabitCategory   @default(OTHER)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  completions HabitCompletion[]
+}
+
+model Checkin {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  sleepHours  Float?
+  energy      Int?
+  mood        Int?
+  focus       Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  habitCompletions HabitCompletion[]
+}
+
+model HabitCompletion {
+  id        Int      @id @default(autoincrement())
+  date      String   // stored as YYYY-MM-DD key
+  createdAt DateTime @default(now())
+
+  habit     Habit   @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId   Int
+  checkin   Checkin? @relation(fields: [checkinId], references: [id])
+  checkinId Int?
+
+  @@unique([habitId, date])
+}
