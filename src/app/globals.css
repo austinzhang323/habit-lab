@@ -22,13 +22,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #f3f4f6;
-    --border: #374151;
-  }
-}
+/* Dark mode disabled — light only */
+/* Override Tailwind's dark variant to never match */
+@custom-variant dark (&:is(.dark *));
 
 * {
   @apply border-border;
