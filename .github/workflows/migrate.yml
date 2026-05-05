@@ -1,0 +1,31 @@
+name: Migrate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - prisma/migrations/**
+      - prisma/schema.prisma
+
+jobs:
+  migrate:
+    name: Apply DB Migrations
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
