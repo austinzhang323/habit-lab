@@ -1,65 +1,92 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col">
+      {/* Hero Section */}
+      <section className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28 max-w-7xl mx-auto w-full">
+        <div className="text-center space-y-8">
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-foreground">
+            Build Better <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Habits</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-foreground/70 max-w-2xl mx-auto leading-relaxed">
+            Track your daily habits and monitor your progress. From sleep and energy to mood and focus, HabitLab helps you become your best self.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Link
+              href="/check-in"
+              className="inline-flex items-center justify-center px-8 py-3 font-semibold text-white bg-gradient-to-r from-primary to-primary-dark rounded-lg hover:shadow-lg hover:shadow-primary/30 transition-all"
+            >
+              Start Check-in →
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center px-8 py-3 font-semibold text-foreground border border-border rounded-lg hover:bg-foreground/5 transition-all"
+            >
+              View Dashboard
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Features Section */}
+      <section className="px-4 sm:px-6 lg:px-8 py-20 bg-foreground/5 dark:bg-foreground/5">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
+            Features
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-xl border border-border hover:border-primary/50 transition-colors">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Track Metrics</h3>
+              <p className="text-foreground/70">
+                Monitor sleep, energy, mood, and focus levels daily to understand your patterns.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-xl border border-border hover:border-primary/50 transition-colors">
+              <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
+                <span className="text-2xl">📈</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Visualize Progress</h3>
+              <p className="text-foreground/70">
+                See your progress over time with intuitive charts and easy-to-read dashboards.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-xl border border-border hover:border-primary/50 transition-colors">
+              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+                <span className="text-2xl">✓</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Build Habits</h3>
+              <p className="text-foreground/70">
+                Create and track custom habits to build consistency and achieve your goals.
+              </p>
+            </div>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* CTA Section */}
+      <section className="px-4 sm:px-6 lg:px-8 py-20 max-w-7xl mx-auto w-full">
+        <div className="bg-gradient-to-r from-primary to-secondary p-12 rounded-2xl text-white text-center space-y-6">
+          <h2 className="text-4xl font-bold">Ready to Start?</h2>
+          <p className="text-lg opacity-90 max-w-xl mx-auto">
+            Begin your habit tracking journey today and see the transformation.
+          </p>
+          <Link
+            href="/check-in"
+            className="inline-block px-8 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Get Started Now
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
