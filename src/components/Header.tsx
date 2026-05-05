@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
@@ -34,10 +35,8 @@ export default function Header() {
           className="flex items-center gap-2 font-bold text-xl"
           onClick={() => setIsOpen(false)}
         >
-          <span className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white">
-            ✓
-          </span>
-          <span>HabitLab</span>
+          <Image src="/logo.svg" alt="HabitLab logo" width={32} height={32} />
+          <span>habit<span className="text-secondary">lab</span></span>
         </Link>
 
         {/* Desktop Navigation Links */}
