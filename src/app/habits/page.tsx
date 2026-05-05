@@ -9,12 +9,20 @@ type Habit = {
   frequency: string;
   category: string;
   createdAt: string;
+  completedDates: string[];
   completedToday?: boolean;
 };
+
+const formatDateLabel = (dateKey: string) =>
+  new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -30,9 +38,14 @@ export default function HabitsPage() {
   const fetchHabits = async () => {
     try {
       setLoading(true);
-      // Since we don't have a habits API yet, we'll use mock data
-      // In a real app, you would fetch from /api/habits
-      setHabits([]);
+      const response = await fetch("/api/habits");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load habits");
+      }
+
+      setHabits(data.data || []);
     } catch (err) {
       console.error("Failed to fetch habits", err);
     } finally {
@@ -40,13 +53,66 @@ export default function HabitsPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add habit logic would go here
-    console.log("New habit:", formData);
-    alert("Habit feature coming soon! 🚀");
-    setShowForm(false);
-    setFormData({ name: "", description: "", frequency: "daily", category: "health" });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/habits", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create habit");
+      }
+
+      setHabits((prev) => [data.data, ...prev]);
+      setShowForm(false);
+      setFormData({
+        name: "",
+        description: "",
+        frequency: "daily",
+        category: "health",
+      });
+    } catch (err) {
+      console.error("Failed to create habit", err);
+      alert("Failed to create habit");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleHabitCompletion = async (habitId: number, completedToday: boolean) => {
+    try {
+      const response = await fetch("/api/habits", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: habitId, completedToday: !completedToday }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update habit");
+      }
+
+      setHabits((prev) =>
+        prev.map((habit) =>
+          habit.id === habitId ? data.data : habit
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update habit", err);
+      alert("Failed to update habit");
+    }
   };
 
   const categoryEmojis: Record<string, string> = {
@@ -65,6 +131,9 @@ export default function HabitsPage() {
     weekly: "Weekly",
     monthly: "Monthly",
   };
+
+  const getRecentCompletionDates = (habit: Habit) =>
+    [...habit.completedDates].sort().reverse().slice(0, 5);
 
   if (loading) {
     return (
@@ -173,9 +242,10 @@ export default function HabitsPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="flex-1 px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors"
                 >
-                  Create Habit
+                  {isSubmitting ? "Creating..." : "Create Habit"}
                 </button>
                 <button
                   type="button"
@@ -227,14 +297,49 @@ export default function HabitsPage() {
                   </div>
                 </div>
 
+                <div className="mb-4 flex items-center justify-between rounded-lg bg-foreground/5 px-3 py-2 text-sm">
+                  <span className="text-foreground/70">Completions logged</span>
+                  <span className="font-semibold text-foreground">
+                    {habit.completedDates.length}
+                  </span>
+                </div>
+
                 {habit.description && (
                   <p className="text-foreground/70 text-sm mb-4">
                     {habit.description}
                   </p>
                 )}
 
-                <button className="w-full px-4 py-2 bg-success text-white font-semibold rounded-lg hover:bg-success/90 transition-colors">
-                  Mark Complete ✓
+                {habit.completedDates.length > 0 && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/50">
+                      Recent History
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {getRecentCompletionDates(habit).map((dateKey) => (
+                        <span
+                          key={dateKey}
+                          className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                        >
+                          {formatDateLabel(dateKey)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    toggleHabitCompletion(habit.id, Boolean(habit.completedToday))
+                  }
+                  className={`w-full px-4 py-2 text-white font-semibold rounded-lg transition-colors ${
+                    habit.completedToday
+                      ? "bg-foreground hover:bg-foreground/90"
+                      : "bg-success hover:bg-success/90"
+                  }`}
+                >
+                  {habit.completedToday ? "Completed Today" : "Mark Complete ✓"}
                 </button>
               </div>
             ))}

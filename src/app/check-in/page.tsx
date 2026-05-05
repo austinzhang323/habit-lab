@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Habit = {
+  id: number;
+  name: string;
+  category: string;
+  completedToday?: boolean;
+};
 
 export default function CheckInPage() {
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [selectedHabitIds, setSelectedHabitIds] = useState<number[]>([]);
+  const [loadingHabits, setLoadingHabits] = useState(true);
   const [form, setForm] = useState({
     sleepHours: "",
     energy: 5,
@@ -12,6 +22,27 @@ export default function CheckInPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchHabits = async () => {
+      try {
+        const response = await fetch("/api/habits");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load habits");
+        }
+
+        setHabits(data.data || []);
+      } catch (error) {
+        console.error("Failed to fetch habits", error);
+      } finally {
+        setLoadingHabits(false);
+      }
+    };
+
+    fetchHabits();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -26,6 +57,14 @@ export default function CheckInPage() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const toggleHabitSelection = (habitId: number) => {
+    setSelectedHabitIds((prev) =>
+      prev.includes(habitId)
+        ? prev.filter((id) => id !== habitId)
+        : [...prev, habitId]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +84,34 @@ export default function CheckInPage() {
 
       if (!res.ok) throw new Error(data.error || "Something went wrong");
 
+      if (selectedHabitIds.length > 0) {
+        const habitResponses = await Promise.all(
+          selectedHabitIds.map((habitId) =>
+            fetch("/api/habits", {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ id: habitId, completedToday: true }),
+            })
+          )
+        );
+
+        const failedUpdate = habitResponses.find((response) => !response.ok);
+
+        if (failedUpdate) {
+          throw new Error("Failed to update one or more habits");
+        }
+
+        setHabits((prev) =>
+          prev.map((habit) =>
+            selectedHabitIds.includes(habit.id)
+              ? { ...habit, completedToday: true }
+              : habit
+          )
+        );
+      }
+
       console.log("Saved:", data);
 
       // reset form
@@ -55,6 +122,7 @@ export default function CheckInPage() {
         focus: 5,
         notes: "",
       });
+      setSelectedHabitIds([]);
 
       alert("Check-in saved successfully! 🎉");
     } catch (err) {
@@ -188,6 +256,64 @@ export default function CheckInPage() {
                   <span>Laser Focused</span>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Complete Habits With This Check-In
+                </h2>
+                <p className="text-xs text-foreground/50">
+                  Optionally mark today&apos;s habits complete when you save.
+                </p>
+              </div>
+
+              {loadingHabits ? (
+                <p className="text-sm text-foreground/60">Loading habits...</p>
+              ) : habits.length === 0 ? (
+                <p className="text-sm text-foreground/60">
+                  No habits yet. Create some on the habits page.
+                </p>
+              ) : (
+                <div className="space-y-2 rounded-xl border border-border bg-foreground/5 p-3">
+                  {habits.map((habit) => {
+                    const isSelected = selectedHabitIds.includes(habit.id);
+
+                    return (
+                      <label
+                        key={habit.id}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 transition-colors ${
+                          habit.completedToday ? "bg-white/80" : "bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={habit.completedToday || isSelected}
+                            disabled={Boolean(habit.completedToday)}
+                            onChange={() => toggleHabitSelection(habit.id)}
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {habit.name}
+                            </p>
+                            <p className="text-xs text-foreground/50 capitalize">
+                              {habit.category}
+                            </p>
+                          </div>
+                        </div>
+
+                        {habit.completedToday && (
+                          <span className="rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
+                            Done today
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Notes */}
