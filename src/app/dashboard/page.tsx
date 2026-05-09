@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 
 type Checkin = {
   id: number;
-  sleepHours: string;
+  dateKey: string;
   energy: number;
-  mood: number;
-  focus: number;
-  notes: string;
+  completedHabitIds: number[];
   createdAt: string;
 };
 
@@ -33,41 +31,21 @@ export default function DashboardPage() {
     fetchCheckins();
   }, []);
 
-  const getMoodEmoji = (value: number) => {
-    if (value <= 2) return "😞";
-    if (value <= 4) return "😕";
-    if (value <= 6) return "😐";
-    if (value <= 8) return "🙂";
-    return "😄";
-  };
-
   const getEnergyColor = (value: number) => {
     if (value <= 3) return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200";
     if (value <= 6) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200";
     return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200";
   };
 
-  const getMoodColor = (value: number) => {
-    if (value <= 3) return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200";
-    if (value <= 6) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200";
-    return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200";
-  };
-
-  const getFocusColor = (value: number) => {
-    if (value <= 3) return "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200";
-    if (value <= 6) return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200";
-    return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200";
-  };
-
   const calculateAverages = () => {
-    if (checkins.length === 0) return { sleep: 0, energy: 0, mood: 0, focus: 0 };
-    
-    const sleep = (checkins.reduce((sum, c) => sum + parseFloat(c.sleepHours || "0"), 0) / checkins.length).toFixed(1);
+    if (checkins.length === 0) return { energy: 0, completedHabits: 0 };
+
     const energy = Math.round(checkins.reduce((sum, c) => sum + c.energy, 0) / checkins.length);
-    const mood = Math.round(checkins.reduce((sum, c) => sum + c.mood, 0) / checkins.length);
-    const focus = Math.round(checkins.reduce((sum, c) => sum + c.focus, 0) / checkins.length);
-    
-    return { sleep, energy, mood, focus };
+    const completedHabits = Math.round(
+      checkins.reduce((sum, c) => sum + c.completedHabitIds.length, 0) / checkins.length
+    );
+
+    return { energy, completedHabits };
   };
 
   const averages = calculateAverages();
@@ -104,15 +82,7 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">Average Sleep</p>
-                  <span className="text-2xl">😴</span>
-                </div>
-                <p className="text-3xl font-bold text-primary">{averages.sleep} hrs</p>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-foreground/70 text-sm font-medium">Average Energy</p>
@@ -123,18 +93,10 @@ export default function DashboardPage() {
 
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">Average Mood</p>
-                  <span className="text-2xl">😊</span>
+                  <p className="text-foreground/70 text-sm font-medium">Avg Habits Completed</p>
+                  <span className="text-2xl">✅</span>
                 </div>
-                <p className="text-3xl font-bold text-secondary">{averages.mood}/10</p>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">Average Focus</p>
-                  <span className="text-2xl">🎯</span>
-                </div>
-                <p className="text-3xl font-bold text-success">{averages.focus}/10</p>
+                <p className="text-3xl font-bold text-success">{averages.completedHabits}</p>
               </div>
             </div>
 
@@ -150,29 +112,19 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="font-semibold text-foreground">
-                          {new Date(c.createdAt).toLocaleDateString("en-US", {
+                          {new Date(`${c.dateKey}T00:00:00`).toLocaleDateString("en-US", {
                             weekday: "short",
                             year: "numeric",
                             month: "short",
                             day: "numeric",
                           })}
                         </p>
-                        <p className="text-sm text-foreground/50">
-                          {new Date(c.createdAt).toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </p>
+                        <p className="text-sm text-foreground/50">Daily check-in</p>
                       </div>
-                      <span className="text-3xl">{getMoodEmoji(c.mood)}</span>
+                      <span className="text-3xl">⚡</span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-foreground/50 mb-1">Sleep</p>
-                        <p className="text-lg font-semibold">{c.sleepHours} hrs</p>
-                      </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-xs text-foreground/50 mb-1">Energy</p>
                         <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getEnergyColor(c.energy)}`}>
@@ -180,26 +132,12 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs text-foreground/50 mb-1">Mood</p>
-                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getMoodColor(c.mood)}`}>
-                          {c.mood}/10
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-foreground/50 mb-1">Focus</p>
-                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getFocusColor(c.focus)}`}>
-                          {c.focus}/10
-                        </div>
-                      </div>
-                    </div>
-
-                    {c.notes && (
-                      <div className="bg-foreground/5 rounded-lg p-4 border border-border">
-                        <p className="text-sm text-foreground/70">
-                          <span className="font-semibold text-foreground">Notes:</span> {c.notes}
+                        <p className="text-xs text-foreground/50 mb-1">Habits Completed</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {c.completedHabitIds.length}
                         </p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>

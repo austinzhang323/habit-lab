@@ -23,16 +23,15 @@ type UpdateHabitBody = {
   completedToday?: boolean;
 };
 
-const allowedFrequencies = new Set(["daily", "weekly", "monthly"]);
+const allowedFrequencies = new Set(["daily"]);
 const allowedCategories = new Set([
-  "health",
-  "productivity",
-  "learning",
-  "mindfulness",
-  "fitness",
-  "nutrition",
   "sleep",
-  "other",
+  "cleaning",
+  "exercise",
+  "food",
+  "water",
+  "spiritual-growth",
+  "relational",
 ]);
 
 const habits: Habit[] = [];
@@ -53,8 +52,8 @@ export async function POST(req: Request) {
     const body = (await req.json()) as CreateHabitBody;
     const name = body.name?.trim();
     const description = body.description?.trim() ?? "";
-    const frequency = body.frequency ?? "daily";
-    const category = body.category ?? "health";
+    const frequency = "daily";
+    const category = body.category ?? "exercise";
 
     if (!name) {
       return NextResponse.json(

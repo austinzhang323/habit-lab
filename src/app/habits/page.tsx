@@ -28,7 +28,7 @@ export default function HabitsPage() {
     name: "",
     description: "",
     frequency: "daily",
-    category: "health",
+    category: "exercise",
   });
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function HabitsPage() {
         name: "",
         description: "",
         frequency: "daily",
-        category: "health",
+        category: "exercise",
       });
     } catch (err) {
       console.error("Failed to create habit", err);
@@ -88,48 +88,28 @@ export default function HabitsPage() {
     }
   };
 
-  const toggleHabitCompletion = async (habitId: number, completedToday: boolean) => {
-    try {
-      const response = await fetch("/api/habits", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: habitId, completedToday: !completedToday }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update habit");
-      }
-
-      setHabits((prev) =>
-        prev.map((habit) =>
-          habit.id === habitId ? data.data : habit
-        )
-      );
-    } catch (err) {
-      console.error("Failed to update habit", err);
-      alert("Failed to update habit");
-    }
-  };
-
   const categoryEmojis: Record<string, string> = {
-    health: "🏃",
-    productivity: "💼",
-    learning: "📚",
-    mindfulness: "🧘",
-    fitness: "💪",
-    nutrition: "🥗",
     sleep: "😴",
-    other: "⭐",
+    cleaning: "🧹",
+    exercise: "🏋️",
+    food: "🍽️",
+    water: "💧",
+    "spiritual-growth": "🙏",
+    relational: "🤝",
   };
 
   const frequencyLabels: Record<string, string> = {
     daily: "Every Day",
-    weekly: "Weekly",
-    monthly: "Monthly",
+  };
+
+  const categoryLabels: Record<string, string> = {
+    sleep: "Sleep",
+    cleaning: "Cleaning",
+    exercise: "Exercise",
+    food: "Food",
+    water: "Water",
+    "spiritual-growth": "Spiritual Growth",
+    relational: "Relational",
   };
 
   const getRecentCompletionDates = (habit: Habit) =>
@@ -195,14 +175,13 @@ export default function HabitsPage() {
                     }
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-800"
                   >
-                    <option value="health">🏃 Health</option>
-                    <option value="productivity">💼 Productivity</option>
-                    <option value="learning">📚 Learning</option>
-                    <option value="mindfulness">🧘 Mindfulness</option>
-                    <option value="fitness">💪 Fitness</option>
-                    <option value="nutrition">🥗 Nutrition</option>
                     <option value="sleep">😴 Sleep</option>
-                    <option value="other">⭐ Other</option>
+                    <option value="cleaning">🧹 Cleaning</option>
+                    <option value="exercise">🏋️ Exercise</option>
+                    <option value="food">🍽️ Food</option>
+                    <option value="water">💧 Water</option>
+                    <option value="spiritual-growth">🙏 Spiritual Growth</option>
+                    <option value="relational">🤝 Relational</option>
                   </select>
                 </div>
               </div>
@@ -222,21 +201,11 @@ export default function HabitsPage() {
                 />
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-foreground">
-                  Frequency
-                </label>
-                <select
-                  value={formData.frequency}
-                  onChange={(e) =>
-                    setFormData({ ...formData, frequency: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-800"
-                >
-                  <option value="daily">Every Day</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
+              <div className="space-y-2">
+                <p className="block text-sm font-semibold text-foreground">Frequency</p>
+                <p className="rounded-lg border border-border bg-foreground/5 px-4 py-2 text-sm text-foreground/80">
+                  Every Day
+                </p>
               </div>
 
               <div className="flex gap-4">
@@ -294,6 +263,9 @@ export default function HabitsPage() {
                     <p className="text-sm text-foreground/70">
                       {frequencyLabels[habit.frequency]}
                     </p>
+                    <p className="text-xs text-foreground/55">
+                      {categoryLabels[habit.category] || "Uncategorized"}
+                    </p>
                   </div>
                 </div>
 
@@ -328,19 +300,9 @@ export default function HabitsPage() {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    toggleHabitCompletion(habit.id, Boolean(habit.completedToday))
-                  }
-                  className={`w-full px-4 py-2 text-white font-semibold rounded-lg transition-colors ${
-                    habit.completedToday
-                      ? "bg-foreground hover:bg-foreground/90"
-                      : "bg-success hover:bg-success/90"
-                  }`}
-                >
-                  {habit.completedToday ? "Completed Today" : "Mark Complete ✓"}
-                </button>
+                <p className="rounded-lg bg-foreground/5 px-4 py-2 text-center text-sm text-foreground/70">
+                  Complete this habit in Daily Check-In
+                </p>
               </div>
             ))}
           </div>

@@ -10,7 +10,7 @@ export default function Home() {
             Build Better <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Habits</span>
           </h1>
           <p className="text-xl text-foreground/70 max-w-2xl mx-auto leading-relaxed">
-            Track your daily habits and monitor your progress. From sleep and energy to mood and focus, habitlab helps you become your best self.
+            Track your daily habits and monitor your progress with a quick energy check-in designed for consistency.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Link
@@ -43,7 +43,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Track Metrics</h3>
               <p className="text-foreground/70">
-                Monitor sleep, energy, mood, and focus levels daily to understand your patterns.
+                Log your daily energy in seconds and keep a simple pulse on how your day is going.
               </p>
             </div>
 
