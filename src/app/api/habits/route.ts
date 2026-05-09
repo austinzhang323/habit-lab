@@ -21,6 +21,9 @@ type UpdateHabitBody = {
   id?: number;
   date?: string;
   completedToday?: boolean;
+  name?: string;
+  description?: string;
+  category?: string;
 };
 
 const allowedFrequencies = new Set(["daily"]);
@@ -119,6 +122,38 @@ export async function PATCH(req: Request) {
         { success: false, error: "Habit not found" },
         { status: 404 }
       );
+    }
+
+    const hasMetadataUpdate =
+      typeof body.name === "string" ||
+      typeof body.description === "string" ||
+      typeof body.category === "string";
+
+    if (hasMetadataUpdate) {
+      const nextName = body.name !== undefined ? body.name.trim() : habit.name;
+      const nextDescription =
+        body.description !== undefined ? body.description.trim() : habit.description;
+      const nextCategory = body.category !== undefined ? body.category : habit.category;
+
+      if (!nextName) {
+        return NextResponse.json(
+          { success: false, error: "Habit name is required" },
+          { status: 400 }
+        );
+      }
+
+      if (!allowedCategories.has(nextCategory)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid category" },
+          { status: 400 }
+        );
+      }
+
+      habit.name = nextName;
+      habit.description = nextDescription;
+      habit.category = nextCategory;
+
+      return NextResponse.json({ success: true, data: serializeHabit(habit) });
     }
 
     if (typeof body.completedToday === "boolean") {

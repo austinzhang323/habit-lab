@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Habit = {
   id: number;
@@ -25,8 +25,35 @@ export default function CheckInPage() {
   const [loadingHabits, setLoadingHabits] = useState(true);
   const [form, setForm] = useState({ energy: 5 });
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
+  const [isToastVisible, setIsToastVisible] = useState(false);
+  const hideToastTimerRef = useRef<number | null>(null);
+  const clearToastTimerRef = useRef<number | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const showToast = (message: string, tone: "success" | "error") => {
+    setToast({ message, tone });
+    setIsToastVisible(true);
+
+    if (hideToastTimerRef.current !== null) {
+      window.clearTimeout(hideToastTimerRef.current);
+    }
+
+    if (clearToastTimerRef.current !== null) {
+      window.clearTimeout(clearToastTimerRef.current);
+    }
+
+    hideToastTimerRef.current = window.setTimeout(() => {
+      setIsToastVisible(false);
+      hideToastTimerRef.current = null;
+    }, 3400);
+
+    clearToastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      clearToastTimerRef.current = null;
+    }, 4000);
+  };
 
   useEffect(() => {
     const fetchDailyState = async () => {
@@ -71,6 +98,16 @@ export default function CheckInPage() {
     };
 
     fetchDailyState();
+
+    return () => {
+      if (hideToastTimerRef.current !== null) {
+        window.clearTimeout(hideToastTimerRef.current);
+      }
+
+      if (clearToastTimerRef.current !== null) {
+        window.clearTimeout(clearToastTimerRef.current);
+      }
+    };
   }, []);
 
   const handleSliderChange = (name: string, value: number) => {
@@ -147,11 +184,10 @@ export default function CheckInPage() {
       setLastUpdatedAt(data?.data?.createdAt ?? new Date().toISOString());
 
       console.log("Saved:", data);
-
-      alert("Check-in updated successfully! 🎉");
+      showToast("Check-in updated successfully", "success");
     } catch (err) {
       console.error(err);
-      alert("Failed to save check-in");
+      showToast("Failed to save check-in", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -167,6 +203,21 @@ export default function CheckInPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-foreground/5 to-foreground/10 px-4 sm:px-6 lg:px-8 py-12">
+      {toast && (
+        <div className="fixed inset-x-0 top-6 z-50 flex justify-center pointer-events-none px-4">
+          <div
+            className={`rounded-lg border px-4 py-2 text-sm font-semibold shadow-lg transition-opacity duration-500 ${
+              isToastVisible ? "opacity-100" : "opacity-0"
+            } ${
+              toast.tone === "success"
+                ? "border-green-300 bg-green-50 text-green-800"
+                : "border-red-300 bg-red-50 text-red-800"
+            }`}
+          >
+            {toast.message}
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">Daily Check-In</h1>
