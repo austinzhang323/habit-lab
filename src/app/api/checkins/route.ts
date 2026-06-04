@@ -14,7 +14,7 @@ type CreateCheckinBody = {
 };
 
 // temporary in-memory store
-let checkins: Checkin[] = [];
+const checkins: Checkin[] = [];
 
 const getDateKey = (date = new Date()) => date.toISOString().slice(0, 10);
 

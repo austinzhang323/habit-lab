@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-
-type Habit = {
-  id: number;
-  name: string;
-  description: string;
-  frequency: string;
-  category: string;
-  createdAt: string;
-  completedDates: string[];
-};
+import {
+  allowedCategories,
+  allowedFrequencies,
+  habits,
+  serializeHabit,
+  setCompletion,
+  toggleCompletion,
+  type Habit,
+} from "@/lib/habit-store";
+import { getDateKey } from "@/lib/dates";
 
 type CreateHabitBody = {
   name?: string;
@@ -29,26 +29,6 @@ type UpdateHabitBody = {
 type DeleteHabitBody = {
   id?: number;
 };
-
-const allowedFrequencies = new Set(["daily"]);
-const allowedCategories = new Set([
-  "sleep",
-  "cleaning",
-  "exercise",
-  "food",
-  "water",
-  "spiritual-growth",
-  "relational",
-]);
-
-const habits: Habit[] = [];
-
-const getDateKey = (date = new Date()) => date.toISOString().slice(0, 10);
-
-const serializeHabit = (habit: Habit) => ({
-  ...habit,
-  completedToday: habit.completedDates.includes(getDateKey()),
-});
 
 export async function GET() {
   return NextResponse.json({ data: habits.map(serializeHabit) });
@@ -161,25 +141,9 @@ export async function PATCH(req: Request) {
     }
 
     if (typeof body.completedToday === "boolean") {
-      if (body.completedToday) {
-        if (!habit.completedDates.includes(dateKey)) {
-          habit.completedDates.push(dateKey);
-          habit.completedDates.sort();
-        }
-      } else {
-        habit.completedDates = habit.completedDates.filter(
-          (entry) => entry !== dateKey
-        );
-      }
+      setCompletion(habit, dateKey, body.completedToday);
     } else {
-      if (habit.completedDates.includes(dateKey)) {
-        habit.completedDates = habit.completedDates.filter(
-          (entry) => entry !== dateKey
-        );
-      } else {
-        habit.completedDates.push(dateKey);
-        habit.completedDates.sort();
-      }
+      toggleCompletion(habit, dateKey);
     }
 
     return NextResponse.json({ success: true, data: serializeHabit(habit) });
