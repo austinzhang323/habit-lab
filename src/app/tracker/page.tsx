@@ -8,6 +8,7 @@ import HabitCompletionGrid, {
 import {
   getDateKey,
   getRollingDateKeys,
+  isDateTrackable,
   ROLLING_TRACKER_DAYS,
 } from "@/lib/dates";
 
@@ -108,7 +109,12 @@ export default function TrackerPage() {
       const refreshed = (data.data || []) as Habit[];
       setHabits(
         refreshed
-          .map(({ id, name, category }) => ({ id, name, category }))
+          .map(({ id, name, category, createdAt }) => ({
+            id,
+            name,
+            category,
+            createdAt,
+          }))
           .sort((a, b) => a.name.localeCompare(b.name))
       );
       setGrid(buildGridFromHabits(refreshed, dateKeys));
@@ -147,7 +153,14 @@ export default function TrackerPage() {
         const loaded = (data.data || []) as Habit[];
         const sorted = [...loaded].sort((a, b) => a.name.localeCompare(b.name));
 
-        setHabits(sorted.map(({ id, name, category }) => ({ id, name, category })));
+        setHabits(
+          sorted.map(({ id, name, category, createdAt }) => ({
+            id,
+            name,
+            category,
+            createdAt,
+          }))
+        );
         setGrid(buildGridFromHabits(sorted, dateKeys));
       } catch (error) {
         showToast(
@@ -177,6 +190,11 @@ export default function TrackerPage() {
   }, []);
 
   const handleToggle = (habitId: number, dateKey: string, completed: boolean) => {
+    const habit = habits.find((entry) => entry.id === habitId);
+    if (!habit || !isDateTrackable(dateKey, habit.createdAt)) {
+      return;
+    }
+
     const previous = gridRef.current[habitId]?.[dateKey] ?? false;
     if (previous === completed) {
       return;
@@ -219,8 +237,8 @@ export default function TrackerPage() {
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">Tracker</h1>
             <p className="text-foreground/70">
-              Last {ROLLING_TRACKER_DAYS} days — scroll vertically through dates, habits
-              across columns.
+              Up to {ROLLING_TRACKER_DAYS} days — days before a habit was created are not
+              tracked for that habit. Scroll vertically through dates, habits across columns.
             </p>
           </div>
           {saving && (

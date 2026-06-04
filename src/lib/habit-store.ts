@@ -1,4 +1,8 @@
-import { getDateKey, isDateInRollingWindow } from "@/lib/dates";
+import {
+  getDateKey,
+  isDateInRollingWindow,
+  isDateTrackable,
+} from "@/lib/dates";
 
 export type Habit = {
   id: number;
@@ -6,6 +10,7 @@ export type Habit = {
   description: string;
   frequency: string;
   category: string;
+  /** Calendar date key (YYYY-MM-DD) when the habit was created */
   createdAt: string;
   completedDates: string[];
 };
@@ -29,10 +34,20 @@ export const allowedCategories = new Set([
 
 export const habits: Habit[] = [];
 
-export const serializeHabit = (habit: Habit) => ({
-  ...habit,
-  completedToday: habit.completedDates.includes(getDateKey()),
-});
+export const normalizeHabit = (habit: Habit): Habit => {
+  if (!habit.createdAt) {
+    habit.createdAt = getDateKey();
+  }
+  return habit;
+};
+
+export const serializeHabit = (habit: Habit) => {
+  const normalized = normalizeHabit(habit);
+  return {
+    ...normalized,
+    completedToday: normalized.completedDates.includes(getDateKey()),
+  };
+};
 
 export const findHabit = (id: number) => habits.find((entry) => entry.id === id);
 
@@ -80,6 +95,16 @@ export const applyCompletionUpdates = (
     const habit = findHabit(update.habitId);
     if (!habit) {
       return { ok: false, error: `Habit not found: ${update.habitId}`, status: 404 };
+    }
+
+    normalizeHabit(habit);
+
+    if (!isDateTrackable(update.date, habit.createdAt)) {
+      return {
+        ok: false,
+        error: "Date must be on or after the habit was created",
+        status: 400,
+      };
     }
 
     setCompletion(habit, update.date, update.completed);

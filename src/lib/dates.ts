@@ -39,3 +39,19 @@ export const isDateInRollingWindow = (
   dateKey: string,
   days = ROLLING_TRACKER_DAYS
 ): boolean => getRollingDateKeys(days).includes(dateKey);
+
+export const getCreatedDateKey = (createdAt: string): string =>
+  createdAt.slice(0, 10);
+
+export const isDateOnOrAfterCreation = (
+  dateKey: string,
+  createdAt: string
+): boolean => dateKey >= getCreatedDateKey(createdAt);
+
+export const isDateTrackable = (
+  dateKey: string,
+  createdAt: string,
+  days = ROLLING_TRACKER_DAYS
+): boolean =>
+  isDateInRollingWindow(dateKey, days) &&
+  isDateOnOrAfterCreation(dateKey, createdAt);

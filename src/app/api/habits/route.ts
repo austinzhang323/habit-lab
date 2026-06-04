@@ -3,12 +3,13 @@ import {
   allowedCategories,
   allowedFrequencies,
   habits,
+  normalizeHabit,
   serializeHabit,
   setCompletion,
   toggleCompletion,
   type Habit,
 } from "@/lib/habit-store";
-import { getDateKey } from "@/lib/dates";
+import { getDateKey, isDateTrackable } from "@/lib/dates";
 
 type CreateHabitBody = {
   name?: string;
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
       description,
       frequency,
       category,
-      createdAt: new Date().toISOString(),
+      createdAt: getDateKey(),
       completedDates: [],
     };
 
@@ -138,6 +139,18 @@ export async function PATCH(req: Request) {
       habit.category = nextCategory;
 
       return NextResponse.json({ success: true, data: serializeHabit(habit) });
+    }
+
+    normalizeHabit(habit);
+
+    if (!isDateTrackable(dateKey, habit.createdAt)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Date must be on or after the habit was created",
+        },
+        { status: 400 }
+      );
     }
 
     if (typeof body.completedToday === "boolean") {

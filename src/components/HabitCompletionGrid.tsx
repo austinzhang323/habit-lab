@@ -4,6 +4,7 @@ import {
   formatDateRowLabel,
   formatHabitColumnHeader,
   getDateKey,
+  isDateTrackable,
   isWeekendDateKey,
 } from "@/lib/dates";
 
@@ -11,6 +12,7 @@ export type TrackerHabit = {
   id: number;
   name: string;
   category: string;
+  createdAt: string;
 };
 
 type HabitCompletionGridProps = {
@@ -84,6 +86,20 @@ export default function HabitCompletionGrid({
                   )}
                 </th>
                 {habits.map((habit) => {
+                  const trackable = isDateTrackable(dateKey, habit.createdAt);
+
+                  if (!trackable) {
+                    return (
+                      <td
+                        key={`${dateKey}-${habit.id}`}
+                        className="border-b border-border/60 px-2 py-2 text-center text-foreground/25"
+                        aria-hidden
+                      >
+                        —
+                      </td>
+                    );
+                  }
+
                   const completed = grid[habit.id]?.[dateKey] ?? false;
 
                   return (
