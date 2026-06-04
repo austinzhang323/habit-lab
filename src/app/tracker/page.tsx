@@ -254,8 +254,7 @@ export default function TrackerPage() {
 
         {!loading && habits.length > 0 && (
           <p className="mt-4 text-xs text-foreground/50">
-            Today is {todayKey}. Changes save automatically. Edits here update habit
-            completion history; check-in records for past days are not updated.
+            Today is {todayKey}. Changes save automatically.
           </p>
         )}
       </div>

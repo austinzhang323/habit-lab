@@ -10,14 +10,14 @@ export default function Home() {
             Build Better <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Habits</span>
           </h1>
           <p className="text-xl text-foreground/70 max-w-2xl mx-auto leading-relaxed">
-            Track your daily habits and monitor your progress with a quick energy check-in designed for consistency.
+            Track your daily habits, mark completions in the tracker, and see your progress on the dashboard.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Link
-              href="/check-in"
+              href="/tracker"
               className="inline-flex items-center justify-center px-8 py-3 font-semibold text-white bg-gradient-to-r from-primary to-primary-dark rounded-lg hover:shadow-lg hover:shadow-primary/30 transition-all"
             >
-              Start Check-in →
+              Start Tracking →
             </Link>
             <Link
               href="/dashboard"
@@ -41,9 +41,9 @@ export default function Home() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl">📊</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Track Metrics</h3>
+              <h3 className="text-xl font-semibold mb-2">Track Completions</h3>
               <p className="text-foreground/70">
-                Log your daily energy in seconds and keep a simple pulse on how your day is going.
+                Mark habits in a rolling 30-day grid and build streaks with consistent daily activity.
               </p>
             </div>
 
@@ -80,7 +80,7 @@ export default function Home() {
             Begin your habit tracking journey today and see the transformation.
           </p>
           <Link
-            href="/check-in"
+            href="/tracker"
             className="inline-block px-8 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-gray-50 transition-colors"
           >
             Get Started Now

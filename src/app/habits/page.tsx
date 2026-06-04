@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
 type Habit = {
@@ -600,7 +601,10 @@ export default function HabitsPage() {
                     )}
 
                     <p className="rounded-lg bg-foreground/5 px-4 py-2 text-center text-sm text-foreground/70">
-                      Complete this habit in Daily Check-In
+                      Mark completions in the{" "}
+                      <Link href="/tracker" className="font-semibold text-primary hover:underline">
+                        Tracker
+                      </Link>
                     </p>
                   </>
                 )}

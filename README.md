@@ -2,12 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 # Habit Lab
 
-A fullstack Next.js app that tracks daily habits and correlates them with performance metrics like energy, mood, and focus.
+A fullstack Next.js app for tracking daily habits with a rolling completion grid and a stats dashboard.
 
 ## Features
-- Daily check-ins (sleep, energy, mood)
-- Habit tracking with streaks
-- Performance dashboard with trends
+- Habit tracker with a rolling 30-day completion grid
+- Dashboard with completion rates, streaks, and recent activity
+- Habit management with categories
 - End-to-end testing with Playwright
 
 ## Tech Stack
