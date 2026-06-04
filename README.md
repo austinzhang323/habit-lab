@@ -1,6 +1,6 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-# Habit Lab
+# HabitLab
 
 A fullstack Next.js app for tracking daily habits with a rolling completion grid and a stats dashboard.
 

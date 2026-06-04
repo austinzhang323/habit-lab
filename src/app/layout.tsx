@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "habitlab - Build Better Habits",
-  description: "Track your daily habits and build a better you with habitlab",
+  title: "HabitLab - Build Better Habits",
+  description: "Track your daily habits and build a better you with HabitLab",
 };
 
 export default function RootLayout({

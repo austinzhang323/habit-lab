@@ -36,7 +36,7 @@ export default function Header() {
           onClick={() => setIsOpen(false)}
         >
           <Image src="/logo.svg" alt="HabitLab logo" width={32} height={32} />
-          <span>habit<span className="text-secondary">lab</span></span>
+          <span>Habit<span className="text-secondary">Lab</span></span>
         </Link>
 
         {/* Desktop Navigation Links */}
