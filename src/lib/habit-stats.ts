@@ -1,64 +1,61 @@
+import { isDateTrackable } from "@/lib/dates";
+
 export type HabitWithCompletions = {
   completedDates: string[];
+  createdAt: string;
 };
 
-export type DayCompletion = {
-  completed: number;
-  total: number;
+export type PerHabitStat = {
+  habitId: number;
+  name: string;
+  streak: number;
+  completionRate: number;
 };
 
-export type DaySummary = DayCompletion & {
-  dateKey: string;
+export type BestCurrentStreak = {
+  bestStreak: number;
+  habitNames: string[];
 };
 
-export const countCompletionsForDate = (
-  habits: HabitWithCompletions[],
-  dateKey: string
-): DayCompletion => {
-  const total = habits.length;
-  if (total === 0) {
-    return { completed: 0, total: 0 };
-  }
+export const getTrackableDateKeys = (
+  habit: HabitWithCompletions,
+  dateKeys: string[]
+): string[] =>
+  dateKeys.filter((dateKey) => isDateTrackable(dateKey, habit.createdAt));
 
-  const completed = habits.filter((habit) =>
-    habit.completedDates.includes(dateKey)
-  ).length;
-
-  return { completed, total };
-};
-
-export const computeCompletionRate = (
-  habits: HabitWithCompletions[],
+export const computeHabitCompletionRate = (
+  habit: HabitWithCompletions,
   dateKeys: string[]
 ): number => {
-  if (habits.length === 0 || dateKeys.length === 0) {
+  const trackableKeys = getTrackableDateKeys(habit, dateKeys);
+  if (trackableKeys.length === 0) {
     return 0;
   }
 
-  const totalPossible = habits.length * dateKeys.length;
-  const totalCompleted = dateKeys.reduce(
-    (sum, dateKey) => sum + countCompletionsForDate(habits, dateKey).completed,
-    0
-  );
+  const completed = trackableKeys.filter((dateKey) =>
+    habit.completedDates.includes(dateKey)
+  ).length;
 
-  return Math.round((totalCompleted / totalPossible) * 100);
+  return Math.round((completed / trackableKeys.length) * 100);
 };
 
-export const computeCurrentStreak = (
-  habits: HabitWithCompletions[],
+export const computeHabitStreak = (
+  habit: HabitWithCompletions,
   dateKeys: string[]
 ): number => {
-  if (habits.length === 0 || dateKeys.length === 0) {
+  const trackableKeys = getTrackableDateKeys(habit, dateKeys);
+  if (trackableKeys.length === 0) {
     return 0;
   }
 
   let streak = 0;
+  let inStreak = false;
 
-  for (let index = dateKeys.length - 1; index >= 0; index -= 1) {
-    const { completed } = countCompletionsForDate(habits, dateKeys[index]);
-    if (completed >= 1) {
+  for (const dateKey of [...trackableKeys].reverse()) {
+    if (habit.completedDates.includes(dateKey)) {
       streak += 1;
-    } else {
+      inStreak = true;
+    } else if (inStreak) {
       break;
     }
   }
@@ -66,18 +63,35 @@ export const computeCurrentStreak = (
   return streak;
 };
 
-export const getRecentDaySummaries = (
-  habits: HabitWithCompletions[],
-  dateKeys: string[],
-  limit = 10
-): DaySummary[] => {
-  return [...dateKeys]
-    .reverse()
-    .slice(0, limit)
-    .map((dateKey) => ({
-      dateKey,
-      ...countCompletionsForDate(habits, dateKey),
-    }));
+export const computePerHabitStats = (
+  habits: (HabitWithCompletions & { id: number; name: string })[],
+  dateKeys: string[]
+): PerHabitStat[] =>
+  habits.map((habit) => ({
+    habitId: habit.id,
+    name: habit.name,
+    streak: computeHabitStreak(habit, dateKeys),
+    completionRate: computeHabitCompletionRate(habit, dateKeys),
+  }));
+
+export const getBestCurrentStreak = (
+  stats: PerHabitStat[]
+): BestCurrentStreak => {
+  if (stats.length === 0) {
+    return { bestStreak: 0, habitNames: [] };
+  }
+
+  const bestStreak = Math.max(...stats.map((stat) => stat.streak), 0);
+  if (bestStreak === 0) {
+    return { bestStreak: 0, habitNames: [] };
+  }
+
+  const habitNames = stats
+    .filter((stat) => stat.streak === bestStreak)
+    .map((stat) => stat.name)
+    .sort((a, b) => a.localeCompare(b));
+
+  return { bestStreak, habitNames };
 };
 
 export const hasAnyCompletions = (habits: HabitWithCompletions[]): boolean =>

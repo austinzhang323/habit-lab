@@ -3,31 +3,18 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  computeCompletionRate,
-  computeCurrentStreak,
-  countCompletionsForDate,
-  getRecentDaySummaries,
+  computePerHabitStats,
+  getBestCurrentStreak,
   hasAnyCompletions,
 } from "@/lib/habit-stats";
-import {
-  getDateKey,
-  getRollingDateKeys,
-  ROLLING_TRACKER_DAYS,
-} from "@/lib/dates";
+import { getRollingDateKeys, ROLLING_TRACKER_DAYS } from "@/lib/dates";
 
 type Habit = {
   id: number;
   name: string;
+  createdAt: string;
   completedDates: string[];
 };
-
-const formatDateLabel = (dateKey: string) =>
-  new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 
 export default function DashboardPage() {
   const dateKeys = useMemo(
@@ -58,11 +45,25 @@ export default function DashboardPage() {
     void fetchHabits();
   }, []);
 
-  const todayKey = getDateKey();
-  const todayStats = countCompletionsForDate(habits, todayKey);
-  const completionRate = computeCompletionRate(habits, dateKeys);
-  const streak = computeCurrentStreak(habits, dateKeys);
-  const recentDays = getRecentDaySummaries(habits, dateKeys, 10);
+  const perHabitStats = useMemo(
+    () => computePerHabitStats(habits, dateKeys),
+    [habits, dateKeys]
+  );
+  const { bestStreak, habitNames } = useMemo(
+    () => getBestCurrentStreak(perHabitStats),
+    [perHabitStats]
+  );
+  const activeStreaks = useMemo(
+    () =>
+      [...perHabitStats]
+        .filter((stat) => stat.streak > 1)
+        .sort((a, b) => b.streak - a.streak || a.name.localeCompare(b.name)),
+    [perHabitStats]
+  );
+  const completionRates = useMemo(
+    () => [...perHabitStats].sort((a, b) => a.name.localeCompare(b.name)),
+    [perHabitStats]
+  );
   const anyCompletions = hasAnyCompletions(habits);
 
   if (loading) {
@@ -119,66 +120,114 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">Today</p>
-                  <span className="text-2xl">✅</span>
-                </div>
-                <p className="text-3xl font-bold text-success">
-                  {todayStats.completed}/{todayStats.total}
-                </p>
-                <p className="text-sm text-foreground/50 mt-1">habits completed</p>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">
-                    {ROLLING_TRACKER_DAYS}-day average
-                  </p>
-                  <span className="text-2xl">📈</span>
-                </div>
-                <p className="text-3xl font-bold text-primary">{completionRate}%</p>
-                <p className="text-sm text-foreground/50 mt-1">completion rate</p>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-foreground/70 text-sm font-medium">Current streak</p>
-                  <span className="text-2xl">🔥</span>
-                </div>
-                <p className="text-3xl font-bold text-foreground">{streak}</p>
-                <p className="text-sm text-foreground/50 mt-1">
-                  {streak === 1 ? "day" : "days"} with activity
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">Recent activity</h2>
-              <div className="space-y-4">
-                {recentDays.map((day) => (
-                  <div
-                    key={day.dateKey}
-                    className="bg-white dark:bg-gray-900 border border-border rounded-xl p-6 hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          {formatDateLabel(day.dateKey)}
-                        </p>
-                        <p className="text-sm text-foreground/50">
-                          {day.completed}/{day.total} habits completed
-                        </p>
-                      </div>
-                      <span className="text-2xl">✓</span>
-                    </div>
+          <div className="space-y-12">
+            {bestStreak >= 1 && (
+              <div className="max-w-md">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-foreground/70 text-sm font-medium">
+                      Current streak
+                    </p>
+                    <span className="text-2xl">🔥</span>
                   </div>
-                ))}
+                  <p className="text-3xl font-bold text-foreground">{bestStreak}</p>
+                  <p className="text-sm text-foreground/50 mt-1">
+                    {bestStreak === 1 ? "day" : "days"}
+                    {habitNames.length > 0 && (
+                      <>
+                        {" "}
+                        · {habitNames.join(", ")}
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
-          </>
+            )}
+
+            <section className="space-y-4">
+              <h2 className="text-2xl font-bold text-foreground">Streaks by habit</h2>
+              {activeStreaks.length === 0 ? (
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-6">
+                  <p className="text-foreground/70">
+                    No multi-day streaks yet — complete a habit two days in a row
+                    to appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-border overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="px-6 py-3 text-sm font-semibold text-foreground/70">
+                          Habit
+                        </th>
+                        <th className="px-6 py-3 text-sm font-semibold text-foreground/70">
+                          Streak
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeStreaks.map((stat) => (
+                        <tr
+                          key={stat.habitId}
+                          className="border-b border-border last:border-b-0"
+                        >
+                          <td className="px-6 py-4 font-medium text-foreground">
+                            {stat.name}
+                          </td>
+                          <td className="px-6 py-4 text-foreground">
+                            {stat.streak} {stat.streak === 1 ? "day" : "days"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="text-sm text-foreground/50">
+                Consecutive completed days in the last {ROLLING_TRACKER_DAYS} trackable
+                days
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl font-bold text-foreground">
+                Completion rate by habit
+              </h2>
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-6 py-3 text-sm font-semibold text-foreground/70">
+                        Habit
+                      </th>
+                      <th className="px-6 py-3 text-sm font-semibold text-foreground/70">
+                        Rate
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completionRates.map((stat) => (
+                      <tr
+                        key={stat.habitId}
+                        className="border-b border-border last:border-b-0"
+                      >
+                        <td className="px-6 py-4 font-medium text-foreground">
+                          {stat.name}
+                        </td>
+                        <td className="px-6 py-4 text-primary font-semibold">
+                          {stat.completionRate}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-foreground/50">
+                Last {ROLLING_TRACKER_DAYS} trackable days per habit
+              </p>
+            </section>
+          </div>
         )}
       </div>
     </div>
