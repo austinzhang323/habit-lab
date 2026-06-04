@@ -24,8 +24,11 @@ export default function HabitsPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeletingHabit, setIsDeletingHabit] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<number | null>(null);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -38,18 +41,30 @@ export default function HabitsPage() {
     category: "exercise",
   });
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
-  const toastTimeoutRef = useRef<number | null>(null);
+  const [isToastVisible, setIsToastVisible] = useState(false);
+  const hideToastTimerRef = useRef<number | null>(null);
+  const clearToastTimerRef = useRef<number | null>(null);
 
   const showToast = (message: string, tone: "success" | "error") => {
     setToast({ message, tone });
+    setIsToastVisible(true);
 
-    if (toastTimeoutRef.current !== null) {
-      window.clearTimeout(toastTimeoutRef.current);
+    if (hideToastTimerRef.current !== null) {
+      window.clearTimeout(hideToastTimerRef.current);
     }
 
-    toastTimeoutRef.current = window.setTimeout(() => {
+    if (clearToastTimerRef.current !== null) {
+      window.clearTimeout(clearToastTimerRef.current);
+    }
+
+    hideToastTimerRef.current = window.setTimeout(() => {
+      setIsToastVisible(false);
+      hideToastTimerRef.current = null;
+    }, 3600);
+
+    clearToastTimerRef.current = window.setTimeout(() => {
       setToast(null);
-      toastTimeoutRef.current = null;
+      clearToastTimerRef.current = null;
     }, 4200);
   };
 
@@ -57,8 +72,12 @@ export default function HabitsPage() {
     fetchHabits();
 
     return () => {
-      if (toastTimeoutRef.current !== null) {
-        window.clearTimeout(toastTimeoutRef.current);
+      if (hideToastTimerRef.current !== null) {
+        window.clearTimeout(hideToastTimerRef.current);
+      }
+
+      if (clearToastTimerRef.current !== null) {
+        window.clearTimeout(clearToastTimerRef.current);
       }
     };
   }, []);
@@ -198,6 +217,59 @@ export default function HabitsPage() {
     }
   };
 
+  const openDeletePrompt = (habit: Habit) => {
+    setHabitToDelete(habit);
+    setDeleteConfirmName("");
+  };
+
+  const closeDeletePrompt = () => {
+    setHabitToDelete(null);
+    setDeleteConfirmName("");
+  };
+
+  const deleteHabit = async () => {
+    if (!habitToDelete) {
+      return;
+    }
+
+    if (deleteConfirmName.trim() !== habitToDelete.name) {
+      showToast("Habit name does not match", "error");
+      return;
+    }
+
+    setIsDeletingHabit(true);
+
+    try {
+      const response = await fetch("/api/habits", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: habitToDelete.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete habit");
+      }
+
+      setHabits((prev) => prev.filter((habit) => habit.id !== habitToDelete.id));
+
+      if (editingHabitId === habitToDelete.id) {
+        cancelEditHabit();
+      }
+
+      closeDeletePrompt();
+      showToast("Habit deleted", "success");
+    } catch (err) {
+      console.error("Failed to delete habit", err);
+      showToast("Failed to delete habit", "error");
+    } finally {
+      setIsDeletingHabit(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -214,7 +286,9 @@ export default function HabitsPage() {
       {toast && (
         <div className="fixed inset-x-0 top-6 z-50 flex justify-center pointer-events-none px-4">
           <div
-            className={`rounded-lg border px-4 py-2 text-sm font-semibold shadow-lg ${
+            className={`rounded-lg border px-4 py-2 text-sm font-semibold shadow-lg transition-opacity duration-500 ${
+              isToastVisible ? "opacity-100" : "opacity-0"
+            } ${
               toast.tone === "success"
                 ? "border-green-300 bg-green-50 text-green-800"
                 : "border-red-300 bg-red-50 text-red-800"
@@ -224,6 +298,48 @@ export default function HabitsPage() {
           </div>
         </div>
       )}
+
+      {habitToDelete && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-xl dark:bg-gray-900">
+            <h2 className="text-xl font-bold text-foreground">Delete Habit</h2>
+            <p className="mt-2 text-sm text-foreground/70">
+              Type <span className="font-semibold text-foreground">{habitToDelete.name}</span> to confirm deletion.
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder="Type habit name"
+              className="mt-4 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800"
+            />
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeletePrompt}
+                disabled={isDeletingHabit}
+                className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteHabit}
+                disabled={
+                  isDeletingHabit ||
+                  deleteConfirmName.trim() !== habitToDelete.name
+                }
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeletingHabit ? "Deleting..." : "Delete Habit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -363,13 +479,15 @@ export default function HabitsPage() {
                       {categoryLabels[habit.category] || "Uncategorized"}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => startEditHabit(habit)}
-                    className="rounded-md border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-foreground/5 transition-colors"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEditHabit(habit)}
+                      className="rounded-md border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-foreground/5 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mb-4 flex items-center justify-between rounded-lg bg-foreground/5 px-3 py-2 text-sm">
@@ -445,6 +563,13 @@ export default function HabitsPage() {
                         className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-foreground/5 transition-colors"
                       >
                         Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openDeletePrompt(habit)}
+                        className="flex-1 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                      >
+                        Delete
                       </button>
                     </div>
                   </div>

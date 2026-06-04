@@ -26,6 +26,10 @@ type UpdateHabitBody = {
   category?: string;
 };
 
+type DeleteHabitBody = {
+  id?: number;
+};
+
 const allowedFrequencies = new Set(["daily"]);
 const allowedCategories = new Set([
   "sleep",
@@ -179,6 +183,43 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({ success: true, data: serializeHabit(habit) });
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Invalid request" },
+      { status: 400 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = (await req.json()) as DeleteHabitBody;
+
+    if (typeof body.id !== "number") {
+      return NextResponse.json(
+        { success: false, error: "Habit id is required" },
+        { status: 400 }
+      );
+    }
+
+    const habitIndex = habits.findIndex((entry) => entry.id === body.id);
+
+    if (habitIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Habit not found" },
+        { status: 404 }
+      );
+    }
+
+    const [deletedHabit] = habits.splice(habitIndex, 1);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: deletedHabit.id,
+        name: deletedHabit.name,
+      },
+    });
   } catch {
     return NextResponse.json(
       { success: false, error: "Invalid request" },
