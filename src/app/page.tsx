@@ -25,6 +25,12 @@ export default function Home() {
             >
               View Dashboard
             </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center px-8 py-3 font-semibold text-foreground border border-border rounded-lg hover:bg-foreground/5 transition-all"
+            >
+              Sign in
+            </Link>
           </div>
         </div>
       </section>

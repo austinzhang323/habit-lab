@@ -4,12 +4,52 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tracker", label: "Tracker" },
   { href: "/habits", label: "Habits" },
 ];
+
+function AuthControls({ onNavigate }: { onNavigate?: () => void }) {
+  const { data: session, status } = useSession();
+
+  if (status === "loading") {
+    return null;
+  }
+
+  if (status === "authenticated" && session?.user) {
+    const displayName = session.user.name ?? session.user.email ?? "Account";
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-foreground/80 truncate max-w-[10rem]">
+          {displayName}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate?.();
+            signOut({ callbackUrl: "/" });
+          }}
+          className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href="/login"
+      onClick={onNavigate}
+      className="text-sm font-medium text-primary hover:text-primary-dark transition-colors"
+    >
+      Sign in
+    </Link>
+  );
+}
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,20 +66,22 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const closeMenu = () => setIsOpen(false);
+
   return (
     <header ref={headerRef} className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Logo */}
+      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2 font-bold text-xl"
-          onClick={() => setIsOpen(false)}
+          className="flex items-center gap-2 font-bold text-xl shrink-0"
+          onClick={closeMenu}
         >
           <Image src="/logo.svg" alt="HabitLab logo" width={32} height={32} />
-          <span>Habit<span className="text-secondary">Lab</span></span>
+          <span>
+            Habit<span className="text-secondary">Lab</span>
+          </span>
         </Link>
 
-        {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map(({ href, label }) => (
             <Link
@@ -54,28 +96,30 @@ export default function Header() {
               {label}
             </Link>
           ))}
+          <AuthControls />
         </div>
 
-        {/* Mobile Hamburger Button */}
-        <button
-          className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-label="Toggle menu"
-          aria-expanded={isOpen}
-        >
-          {isOpen ? (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
-        </button>
+        <div className="flex md:hidden items-center gap-2">
+          <AuthControls onNavigate={closeMenu} />
+          <button
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => setIsOpen((prev) => !prev)}
+            aria-label="Toggle menu"
+            aria-expanded={isOpen}
+          >
+            {isOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
       </nav>
 
-      {/* Mobile Dropdown Menu */}
       {isOpen && (
         <div className="md:hidden absolute top-16 inset-x-0 border-t border-b bg-white shadow-lg z-50">
           <div className="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-1">
@@ -83,7 +127,7 @@ export default function Header() {
               <Link
                 key={href}
                 href={href}
-                onClick={() => setIsOpen(false)}
+                onClick={closeMenu}
                 className={`px-3 py-2 rounded-lg font-medium transition-colors ${
                   pathname === href
                     ? "bg-primary/10 text-primary"
