@@ -18,39 +18,80 @@ enum HabitFrequency {
 }
 
 enum HabitCategory {
-  HEALTH
-  FITNESS
-  MINDFULNESS
-  PRODUCTIVITY
-  LEARNING
-  OTHER
+  SLEEP
+  CLEANING
+  EXERCISE
+  FOOD
+  WATER
+  SPIRITUAL_GROWTH
+  RELATIONAL
+}
+
+// ─── Auth (NextAuth Prisma adapter) ───────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  habits        Habit[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Habit {
-  id          Int             @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   name        String
   description String?
-  frequency   HabitFrequency  @default(DAILY)
-  category    HabitCategory   @default(OTHER)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  frequency   HabitFrequency @default(DAILY)
+  category    HabitCategory  @default(EXERCISE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   completions HabitCompletion[]
-}
 
-model Checkin {
-  id          Int      @id @default(autoincrement())
-  date        DateTime @default(now())
-  sleepHours  Float?
-  energy      Int?
-  mood        Int?
-  focus       Int?
-  notes       String?
-  createdAt   DateTime @default(now())
-
-  habitCompletions HabitCompletion[]
+  @@index([userId])
 }
 
 model HabitCompletion {
@@ -58,10 +99,8 @@ model HabitCompletion {
   date      String   // stored as YYYY-MM-DD key
   createdAt DateTime @default(now())
 
-  habit     Habit   @relation(fields: [habitId], references: [id], onDelete: Cascade)
-  habitId   Int
-  checkin   Checkin? @relation(fields: [checkinId], references: [id])
-  checkinId Int?
+  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId Int
 
   @@unique([habitId, date])
 }
