@@ -1,6 +1,5 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { Adapter } from "next-auth/adapters";
-import type { PrismaClient as AdapterPrismaClient } from "@prisma/client";
 import prismaAuth from "@/lib/prisma-auth";
 
 /**
@@ -8,7 +7,10 @@ import prismaAuth from "@/lib/prisma-auth";
  * already gone (stale cookie, double sign-out). deleteMany is idempotent.
  */
 export function prismaAuthAdapter(): Adapter {
-  const base = PrismaAdapter(prismaAuth as unknown as AdapterPrismaClient);
+  // Prisma client is generated to src/generated/prisma; cast for adapter typings.
+  const base = PrismaAdapter(
+    prismaAuth as unknown as Parameters<typeof PrismaAdapter>[0]
+  );
   return {
     ...base,
     deleteSession: async (sessionToken) => {
