@@ -7,10 +7,7 @@ import prismaAuth from "@/lib/prisma-auth";
  * already gone (stale cookie, double sign-out). deleteMany is idempotent.
  */
 export function prismaAuthAdapter(): Adapter {
-  // Prisma client is generated to src/generated/prisma; cast for adapter typings.
-  const base = PrismaAdapter(
-    prismaAuth as unknown as Parameters<typeof PrismaAdapter>[0]
-  );
+  const base = PrismaAdapter(prismaAuth);
   return {
     ...base,
     deleteSession: async (sessionToken) => {

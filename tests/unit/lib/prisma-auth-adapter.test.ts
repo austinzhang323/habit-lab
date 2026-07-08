@@ -1,18 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { deleteMany, PrismaAdapter } = vi.hoisted(() => {
+const { deleteMany, PrismaAdapter, prismaAuthMock } = vi.hoisted(() => {
   const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
+  const prismaAuthMock = { session: { deleteMany } };
   const PrismaAdapter = vi.fn(() => ({
     createUser: vi.fn(),
     getSessionAndUser: vi.fn(),
   }));
-  return { deleteMany, PrismaAdapter };
+  return { deleteMany, PrismaAdapter, prismaAuthMock };
 });
 
 vi.mock("@/lib/prisma-auth", () => ({
-  default: {
-    session: { deleteMany },
-  },
+  default: prismaAuthMock,
 }));
 
 vi.mock("@next-auth/prisma-adapter", () => ({
@@ -26,6 +25,23 @@ describe("prismaAuthAdapter", () => {
     deleteMany.mockClear();
     PrismaAdapter.mockClear();
     deleteMany.mockResolvedValue({ count: 0 });
+  });
+
+  it("passes prismaAuth to PrismaAdapter", () => {
+    prismaAuthAdapter();
+    expect(PrismaAdapter).toHaveBeenCalledTimes(1);
+    expect(PrismaAdapter).toHaveBeenCalledWith(prismaAuthMock);
+  });
+
+  it("forwards base adapter methods from PrismaAdapter", () => {
+    const createUser = vi.fn();
+    const getSessionAndUser = vi.fn();
+    PrismaAdapter.mockReturnValueOnce({ createUser, getSessionAndUser });
+
+    const adapter = prismaAuthAdapter();
+
+    expect(adapter.createUser).toBe(createUser);
+    expect(adapter.getSessionAndUser).toBe(getSessionAndUser);
   });
 
   it("deleteSession uses deleteMany for idempotent sign-out", async () => {
