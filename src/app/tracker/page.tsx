@@ -91,8 +91,6 @@ export default function TrackerPage() {
       return;
     }
 
-    const snapshot = JSON.parse(JSON.stringify(gridRef.current)) as GridState;
-
     setSaving(true);
     try {
       const response = await fetch("/api/habits/completions", {
@@ -119,7 +117,17 @@ export default function TrackerPage() {
       );
       setGrid(buildGridFromHabits(refreshed, dateKeys));
     } catch (error) {
-      setGrid(snapshot);
+      setGrid((current) => {
+        const reverted = JSON.parse(JSON.stringify(current)) as GridState;
+
+        for (const update of updates) {
+          if (reverted[update.habitId]) {
+            reverted[update.habitId][update.date] = !update.completed;
+          }
+        }
+
+        return reverted;
+      });
       showToast(
         error instanceof Error ? error.message : "Failed to save changes",
         "error"

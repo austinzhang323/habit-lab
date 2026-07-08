@@ -34,6 +34,10 @@ export const allowedCategories = new Set([
 
 export const habits: Habit[] = [];
 
+export const resetHabitsForTests = () => {
+  habits.length = 0;
+};
+
 export const normalizeHabit = (habit: Habit): Habit => {
   if (!habit.createdAt) {
     habit.createdAt = getDateKey();
