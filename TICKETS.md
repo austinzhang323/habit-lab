@@ -10,25 +10,22 @@ IDs continue the existing HAB- series. `Depends on` lists tickets that must merg
 ## Assignment order (dependency view)
 
 ```
-Phase 1  HAB-59 (done, standalone) ; HAB-60, HAB-81 → HAB-61 → HAB-62 → HAB-63 → HAB-64 → HAB-65, HAB-66, HAB-82
-Phase 2                                                       └→ HAB-67 → HAB-68 → HAB-69 → HAB-70 → HAB-71
-Phase 3                                                                                               └→ HAB-72
+Phase 1  HAB-60, HAB-81 → HAB-61 → HAB-62 → HAB-63 → HAB-64 → HAB-65, HAB-66, HAB-82
+Phase 2                            └→ HAB-67 → HAB-68 → HAB-69 → HAB-70 → HAB-71
+Phase 3                                                                    └→ HAB-72
 Phase 4  (after HAB-70)  HAB-73 (no code dependency) ‖ HAB-74 ‖ HAB-75
 Phase 5  HAB-76 (early) → HAB-77 ;  HAB-78 (also needs HAB-60, HAB-67) ‖ HAB-79 ‖ HAB-80
 ```
 
 **Contention files** (never assign two open tickets that both edit these): `prisma/schema.prisma`, `src/lib/habits-db.ts`, `src/lib/habit-mapper.ts`, `src/app/habits/` (HAB-70 and HAB-82 both touch this directory with no formal dependency edge between them — sequence or coordinate rather than parallelize).
 
-> **Changelog (this pass):** renumbered every ticket up by one (old HAB-59..HAB-81 → HAB-60..HAB-82) because `HAB-59` was already used in real repo history (`fe63af5`, a lockfile fix unrelated to this planning series) — the old numbering collided with actual commits. Backfilled a HAB-59 entry above documenting that already-done work so the ID isn't a silent gap. Everything below refers to the *new* numbers only. Separately (same pass as the renumbering): added HAB-81 (timezone-aware `dates.ts`) and HAB-82 (un-archive); tightened HAB-61/64 to depend on HAB-81 — note HAB-81 itself has no dependency (it's an independent starting ticket alongside HAB-60, not downstream of it, hence the diagram shows `HAB-60, HAB-81 →` rather than `HAB-60 → HAB-81 →`); added `User.timezone` persistence (HAB-60) so shared-view stats can use the *owner's* timezone rather than the requesting viewer's (see HAB-60/64/68/71/72 below); added explicit archived-habit and re-invite/verified-email requirements to HAB-67/68/69; loosened Phase 4 dependencies from HAB-71 to HAB-70 (HAB-73 has no code dependency at all) per `ROADMAP.md`'s own stated intent; added HAB-60/HAB-67 as dependencies of HAB-78 so the migration-drift check can't merge before the migrations it covers exist.
+> **Note on numbering:** this series intentionally starts at `HAB-60`, skipping `HAB-59`. `HAB-59` was going to collide with real repo history — at the time, a lockfile fix (`fe63af5`, "HAB-59 fix: lockfile out of sync") already used that ID. Since then, that fix was redone more completely and correctly reticketed as **`HAB-56`** ("regenerate lockfile and pin CI to Node 24 LTS", commit `ded796e`), and `HAB-59` in real history now refers to the commit that authored these planning docs (`b9fe55b`) — neither of which is part of this ticket series. Rather than keep chasing a moving real-world ID, this series simply starts at `HAB-60` and stays there.
+>
+> **Changelog:** renumbered every ticket up by one (old HAB-59..HAB-81 → HAB-60..HAB-82) for the reason above. Everything below refers to the *new* numbers only. Same pass: added HAB-81 (timezone-aware `dates.ts`) and HAB-82 (un-archive); tightened HAB-61/64 to depend on HAB-81 — note HAB-81 itself has no dependency (it's an independent starting ticket alongside HAB-60, not downstream of it, hence the diagram shows `HAB-60, HAB-81 →` rather than `HAB-60 → HAB-81 →`); added `User.timezone` persistence (HAB-60) so shared-view stats can use the *owner's* timezone rather than the requesting viewer's (see HAB-60/64/68/71/72 below); added explicit archived-habit and re-invite/verified-email requirements to HAB-67/68/69; loosened Phase 4 dependencies from HAB-71 to HAB-70 (HAB-73 has no code dependency at all) per `ROADMAP.md`'s own stated intent; added HAB-60/HAB-67 as dependencies of HAB-78 so the migration-drift check can't merge before the migrations it covers exist.
 
 ---
 
 # Phase 1 — Persistence + security (critical path)
-
-### HAB-59 — Fix out-of-sync lockfile ✅ *(done)*
-**Depends on:** — · **Files:** `package-lock.json`
-- `npm ci` failed in CI (`EUSAGE`: lockfile missing `@emnapi/core@1.10.0`/`@emnapi/runtime@1.10.0`, pinned exactly by the optional `@rolldown/binding-wasm32-wasi` dependency but never resolved as a nested entry). Regenerated the lockfile so the missing nested resolutions exist.
-- **Done:** committed as `fe63af5` ("HAB-59 fix: lockfile out of sync"). No other tickets depend on this; listed here only so the ID isn't skipped and the sequence below stays offset correctly.
 
 ### HAB-60 — Schema: add habit `archivedAt`, user `timezone` + confirm completion model
 **Depends on:** — · **Files:** `prisma/schema.prisma`, migration

@@ -8,9 +8,9 @@
 
 ~55%+ complete: a polished, tested single-user demo with working Google sign-in and a ready-to-extend Prisma schema, but habits still live in a shared in-memory array (`src/lib/habit-store.ts`) — nothing persisted or isolated per user yet. Phases 1–5 in `ROADMAP.md` cover the remaining work.
 
-The planning docs (`PRODUCT.md`, `ROADMAP.md`, `TICKETS.md`) were reviewed by five parallel subagents across product/UX, technical/data-model, security/isolation, testability/CI, and scope/sequencing lenses, then revised based on decisions locked in with the repo owner (Austin) and checked by two adversarial follow-up reviews. That review work is done — the plans are considered solid and ready to build from. See git log for the commits: `docs: apply plan-review decisions...` and `docs: shift ticket IDs +1...`.
+The planning docs (`PRODUCT.md`, `ROADMAP.md`, `TICKETS.md`) were reviewed by five parallel subagents across product/UX, technical/data-model, security/isolation, testability/CI, and scope/sequencing lenses, then revised based on decisions locked in with the repo owner (Austin) and checked by two adversarial follow-up reviews. That review work is done — the plans are considered solid and ready to build from. See `TICKETS.md`'s changelog note at the top for the numbering history.
 
-**Ticket numbering:** the series is `HAB-59` through `HAB-82`. `HAB-59` is already done (a lockfile fix, commit `fe63af5` — unrelated to the planning series, just occupies that ID in real history). **The next unblocked ticket is `HAB-60`** (Prisma schema: add `Habit.archivedAt` and `User.timezone`).
+**Ticket numbering:** the series is `HAB-60` through `HAB-82` (intentionally skips `HAB-59` — see the note at the top of `TICKETS.md` for why: it collided with real commits, most recently `HAB-56`, "regenerate lockfile and pin CI to Node 24 LTS"). **The next unblocked ticket is `HAB-60`** (Prisma schema: add `Habit.archivedAt` and `User.timezone`).
 
 ---
 
