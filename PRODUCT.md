@@ -36,6 +36,7 @@ These definitions are **decisions, not suggestions**. Use them consistently in c
 A recurring thing a user tracks: `name`, `category`, `frequency`, `createdAt`, `userId`, `archivedAt?`.
 - **Daily-only** for the MVP, even though the schema allows WEEKLY/MONTHLY.
 - **Removal = archive (soft-delete), not hard delete.** Setting `archivedAt` hides the habit from the active tracker but keeps the row and its completions in the DB, so history and stats are preserved and the action is reversible. Never `DELETE` a habit's rows in normal use.
+- **Reversibility ships in the MVP:** an owner can view their archived habits and un-archive (clear `archivedAt`) to restore one to the active tracker, history intact.
 - Editing name/category keeps the same habit `id`, so history carries over.
 
 ### Completion
@@ -45,8 +46,8 @@ A record that a habit was done on a specific day.
 - **Editable across the window:** a user may check/uncheck **any trackable day** in the rolling 30-day window (back to the habit's creation date), not just today.
 
 ### Day boundary ("today")
-- "Today" rolls over at **midnight in the user's local timezone** (the viewer's browser timezone), not UTC or a fixed server zone. All completion date keys and streak math must be timezone-aware.
-- **Shared views use the owner's data as-is.** A viewer sees the owner's completions by their stored date keys; streaks/rates for a shared tracker are computed over those keys. *(Assumption to confirm: the owner's day boundaries define the shared tracker's days. Flag if you'd rather compute in the viewer's timezone.)*
+- "Today" rolls over at **midnight in the user's local timezone** (the viewer's browser timezone), not UTC or a fixed server zone. **Mechanism (decided):** the client sends its IANA timezone (e.g. `America/Chicago`) with every habit/completion/stats request; the server derives all date keys and streak math from that value, and persists the latest value on `User.timezone` so it's available even when someone else is viewing that user's tracker. No date-key logic may silently default to UTC or server-local time except as an explicit, documented fallback when a value is unavailable.
+- **Decided: shared views use the owner's timezone.** A viewer sees the owner's tracker with day boundaries computed in the *owner's* stored timezone (`User.timezone`), not the viewer's own — one canonical set of streaks/rates per tracker regardless of who's looking. (This was previously an open assumption in this doc; it's now resolved.)
 
 ### Streak (per habit)
 Consecutive completed days for a habit, using a **strict consecutive-day rule**.
@@ -74,7 +75,9 @@ An invitation from an owner to another account, by email, to view the owner's **
 - **Invite any email:** if no account exists for that email yet, the share stays PENDING and activates when someone signs in with that Google email.
 - **Many-to-many:** an owner may invite many people; a user may hold many shares.
 - **VIEW-only** for the MVP — no edit permission, no per-habit selection (the whole tracker is shared).
-- Archived habits stay hidden in shared views too.
+- Archived habits stay hidden in shared views too — enforced at the data layer (the query that lists a tracker's habits excludes `archivedAt`-set rows for owner and viewer alike), not only in the UI.
+- **Verified-email gate:** a PENDING invite only activates for an account whose `emailVerified` is set at sign-in; an unverified email never claims a pending share.
+- **Re-inviting after revoke reactivates** the existing `HabitShare` row back to PENDING rather than creating a duplicate — `(ownerId, invitedEmail)` is unique, so the invite flow must upsert, not insert-or-fail.
 
 ---
 
@@ -99,11 +102,20 @@ An invitation from an owner to another account, by email, to view the owner's **
 
 **In scope (MVP):** persistence, per-user isolation, route/API auth, email-invite VIEW sharing, streaks, completion rates, docs, CI/CD hardening.
 
-**Out of scope (MVP):** domain-wide auto-sharing (everyone on a domain), EDIT-permission sharing, account linking across multiple logins, weekly/monthly frequency UI, charts (`recharts`) and generated/"smart" insights, Auth.js v5 upgrade, example-habit seeding.
+**Out of scope (MVP):** domain-wide auto-sharing (everyone on a domain), EDIT-permission sharing, account linking across multiple logins, weekly/monthly frequency UI, charts (`recharts`) and generated/"smart" insights, Auth.js v5 upgrade, example-habit seeding, rate limiting / brute-force protection on habit and share endpoints (cross-user access is already blocked by 404s; rate limiting is a documented post-MVP hardening item, not a blocker).
 
 **Abandoned:** the earlier daily check-in (sleep / mood / energy / focus) direction — models and pages removed.
 
 ---
+
+## Known open items (flagged, not yet decided)
+
+Surfaced during plan review; deliberately not resolved yet — don't build silently around these, and don't assume an answer either way:
+
+- **Mid-session revocation:** if a viewer has a shared tracker open when the owner revokes access, nothing currently guarantees the *next* request re-checks `canView` versus serving cached data. Needs a decision on whether that's acceptable (next fetch naturally re-checks) or needs explicit handling.
+- **"Viewing as owner X" UI:** dropdown, tabs, or something else for a viewer with multiple accepted shares — undecided.
+- **Stale pending invite on email reassignment:** distinct from the `emailVerified` gate above — if an email address is reused/reassigned to a different person after an invite was sent, that new person could inherit the original pending share. No TTL or re-confirmation decided for MVP.
+- **Empty shared tracker ambiguity:** if an owner archives all their habits, a viewer sees an empty tracker — visually indistinguishable from having been revoked. No decision on whether to disambiguate.
 
 ## Current state (as of this writing)
 

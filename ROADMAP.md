@@ -45,12 +45,14 @@ This is the existing, fully-specced Chunk 3. It's the largest and most important
 
 **Build**
 
-1. `src/lib/habit-mapper.ts` — bidirectional Prisma ↔ API mapping: category (`spiritual-growth` ↔ `SPIRITUAL_GROWTH`), frequency, `createdAt` date, `completedDates[]` ↔ `completions[].date`, plus a `completedToday` flag via `getDateKey()`.
-2. `src/lib/habits-db.ts` — user-scoped Prisma repository. Every function takes `userId`: `listHabits`, `createHabit`, `updateHabit`, `deleteHabit`, `applyCompletions`. Ownership enforced with `where: { id, userId }`.
-3. Refactor `src/lib/habit-store.ts` — keep validation helpers (30-day window, `isDateTrackable`, allowed categories); remove the in-memory array. Switch habit IDs from `Date.now()` to Prisma autoincrement.
-4. Secure `/api/habits` and `/api/habits/completions` — `getServerSession(authOptions)`; return **401** with no session, **404** on cross-user `habitId`.
-5. `src/middleware.ts` — `withAuth` protecting `/dashboard`, `/tracker`, `/habits`, `/api/habits*`; redirect to `/login?callbackUrl=…`.
-6. Home page — redirect signed-in users to the dashboard (or show a CTA).
+1. `src/lib/dates.ts` — make timezone-aware: every date-key function (`getDateKey`, `getRollingDateKeys`, `isDateInRollingWindow`, `isDateTrackable`, `formatDateRowLabel`, `isWeekendDateKey`) takes an IANA timezone parameter and computes with it (no more `toISOString()`/server-local defaults for real usage; UTC remains only as an explicit fallback when a timezone is missing).
+2. `src/lib/habit-mapper.ts` — bidirectional Prisma ↔ API mapping: category (`spiritual-growth` ↔ `SPIRITUAL_GROWTH`), frequency, `createdAt` date, `completedDates[]` ↔ `completions[].date`, plus a `completedToday` flag via `getDateKey()` using the caller's timezone.
+3. `src/lib/habits-db.ts` — user-scoped Prisma repository. Every function takes `userId`: `listHabits`, `createHabit`, `updateHabit`, `archiveHabit`, `unarchiveHabit`, `applyCompletions`. Ownership enforced with `where: { id, userId }`.
+4. Refactor `src/lib/habit-store.ts` — keep validation helpers (30-day window, `isDateTrackable`, allowed categories); remove the in-memory array. Switch habit IDs from `Date.now()` to Prisma autoincrement.
+5. Secure `/api/habits` and `/api/habits/completions` — `getServerSession(authOptions)`; return **401** with no session, **404** on cross-user `habitId`. Read the client's IANA timezone from a request header (e.g. `X-Timezone`), validate it, and thread it into the mapper/date logic; fall back to UTC only if the header is missing or invalid. Also persist the validated value onto `User.timezone` on each authenticated request, so a user's most recent timezone stays available for shared-view stat computation even when someone else is viewing their tracker.
+6. `src/middleware.ts` — `withAuth` protecting `/dashboard`, `/tracker`, `/habits`, `/api/habits*`; redirect to `/login?callbackUrl=…`.
+7. Home page — redirect signed-in users to the dashboard (or show a CTA).
+8. Un-archive: `unarchiveHabit()` clearing `archivedAt`, plus a minimal archived-habits view with a restore action, so the "reversible" archive claim in `PRODUCT.md` actually has a UI path.
 
 **Done when**
 
@@ -60,6 +62,8 @@ This is the existing, fully-specced Chunk 3. It's the largest and most important
 - [ ] `GET /api/habits` without a session → 401.
 - [ ] `/habits` without a session → redirect to `/login`.
 - [ ] Tracker completions persist within the 30-day window.
+- [ ] A completion near local midnight lands on the correct day for a non-UTC timezone.
+- [ ] Archiving then un-archiving a habit restores it to the active tracker with history intact.
 
 ---
 
@@ -95,12 +99,12 @@ Add the matching back-relations on `User`. Run a migration (`add_habit_sharing`)
 
 **Flow**
 
-1. **Invite:** owner enters an email on a "Share" screen → create `HabitShare(status = PENDING)`. If a `User` with that email already exists, set `invitedUserId` immediately.
-2. **Accept:** on sign-in, resolve pending invites for the user's email (match on `invitedEmail`), show them, let the user accept → `status = ACCEPTED`, `invitedUserId` set.
+1. **Invite:** owner enters an email on a "Share" screen → create `HabitShare(status = PENDING)`, or reactivate an existing row for that `(ownerId, invitedEmail)` pair back to `PENDING` if one already exists (revoked or previously pending) rather than inserting a duplicate — the pair is unique. If a `User` with that email already exists, set `invitedUserId` immediately.
+2. **Accept:** on sign-in, resolve pending invites for the user's email — only for accounts with `emailVerified` set — (match on `invitedEmail`), show them, let the user accept → `status = ACCEPTED`, `invitedUserId` set.
 3. **View:** an accepted share lets the invited user open the owner's tracker read-only via a "Shared with me" switcher.
 4. **Revoke:** owner can set `status = REVOKED` (or delete the row).
 
-**Access-rule change (small but important):** in `habits-db.ts`, reads for a given tracker are allowed if the requester is the owner **or** has an `ACCEPTED` share for that owner. Writes remain owner-only for the MVP (VIEW permission). Keep this check in one helper so every route uses the same logic.
+**Access-rule change (small but important):** in `habits-db.ts`, reads for a given tracker are allowed if the requester is the owner **or** has an `ACCEPTED` share for that owner. Writes remain owner-only for the MVP (VIEW permission). Keep this check in one helper so every route uses the same logic. This includes archived-habit exclusion: `listHabitsForOwner` must exclude `archivedAt`-set habits for both the owner and any accepted-share requester — the guarantee lives at the data layer, not only in the tracker UI. It also includes timezone: shared-tracker stats compute date keys using the *owner's* persisted `User.timezone`, not the viewer's own — never the requester's `X-Timezone` header for someone else's tracker.
 
 **API / UI**
 
@@ -167,7 +171,7 @@ This is the "after push to the repo" layer: everything that runs automatically o
 **Migrations (`migrate.yml`)**
 
 - Confirm it runs `prisma migrate deploy` on merge to `main` (and/or on deploy), covering the new `add_habit_sharing` migration.
-- Guard against drift: add a check that `prisma migrate status` is clean, so a PR that changes the schema without a migration fails CI.
+- Guard against drift: add a check that `prisma migrate status` is clean, so a PR that changes the schema without a migration fails CI. This check only becomes meaningful once the `add_habit_archive` and `add_habit_sharing` migrations actually exist — sequence the drift-check ticket after both, not just after the CI groundwork.
 
 **Branch protection & required checks**
 
@@ -203,4 +207,4 @@ Every PR above must be green in GitHub Actions before merge — that's the point
 
 ## Explicitly out of scope for the MVP
 
-Weekly/monthly habit frequency (schema allows it, UI is daily-only — decide later), domain-wide auto-sharing, edit-permission sharing, account linking, Auth.js v5 upgrade, example-habit seeding, richer charted/generated insights.
+Weekly/monthly habit frequency (schema allows it, UI is daily-only — decide later), domain-wide auto-sharing, edit-permission sharing, account linking, Auth.js v5 upgrade, example-habit seeding, richer charted/generated insights, rate limiting / brute-force protection on habit and share endpoints (documented post-MVP hardening item; cross-user 404s already block unauthorized access).
