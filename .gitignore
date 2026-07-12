@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/.archive/
 
 # environment variables — never commit secrets
 .env
