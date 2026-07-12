@@ -24,10 +24,10 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
-          # Accelerate doesn't need a real DB URL at generate time,
-          # but the env var must be non-empty for prisma.config.ts
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # prisma generate never connects to the DB — a placeholder just
+          # needs to be non-empty to satisfy prisma.config.ts's env() check.
+          DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
 
       - name: Lint
         run: npm run lint
@@ -41,8 +41,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          # No page statically imports prisma (all DB access is behind API
+          # routes), so the build never actually connects — only needs a
+          # non-empty, well-formed value to satisfy src/lib/prisma.ts.
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
 
   e2e:
     name: End-to-end tests
@@ -63,8 +66,10 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # prisma generate never connects to the DB — a placeholder just
+          # needs to be non-empty to satisfy prisma.config.ts's env() check.
+          DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -74,8 +79,8 @@ jobs:
         env:
           CI: true
           E2E_TEST: "1"
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: ci-e2e-nextauth-secret
           GOOGLE_CLIENT_ID: ci-e2e-google-client-id
