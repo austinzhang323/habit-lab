@@ -59,7 +59,9 @@ export default function TrackerPage() {
   const hideToastTimerRef = useRef<number | null>(null);
   const clearToastTimerRef = useRef<number | null>(null);
 
-  gridRef.current = grid;
+  useEffect(() => {
+    gridRef.current = grid;
+  }, [grid]);
 
   const showToast = useCallback((message: string, tone: "success" | "error") => {
     setToast({ message, tone });

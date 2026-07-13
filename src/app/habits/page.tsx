@@ -70,6 +70,23 @@ export default function HabitsPage() {
   };
 
   useEffect(() => {
+    const fetchHabits = async () => {
+      try {
+        const response = await fetch("/api/habits");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load habits");
+        }
+
+        setHabits(data.data || []);
+      } catch (err) {
+        console.error("Failed to fetch habits", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchHabits();
 
     return () => {
@@ -82,24 +99,6 @@ export default function HabitsPage() {
       }
     };
   }, []);
-
-  const fetchHabits = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/habits");
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to load habits");
-      }
-
-      setHabits(data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch habits", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
