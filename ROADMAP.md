@@ -207,4 +207,4 @@ Every PR above must be green in GitHub Actions before merge — that's the point
 
 ## Explicitly out of scope for the MVP
 
-Weekly/monthly habit frequency (schema allows it, UI is daily-only — decide later), domain-wide auto-sharing, edit-permission sharing, account linking, Auth.js v5 upgrade, example-habit seeding, richer charted/generated insights, rate limiting / brute-force protection on habit and share endpoints (documented post-MVP hardening item; cross-user 404s already block unauthorized access).
+Weekly/monthly habit frequency (schema allows it, UI is daily-only — decide later), domain-wide auto-sharing, edit-permission sharing, account linking, Auth.js v5 upgrade, example-habit seeding, richer charted/generated insights, rate limiting / brute-force protection on habit and share endpoints (documented post-MVP hardening item; cross-user 404s already block unauthorized access), Server-Component conversion of `dashboard`/`habits`/`tracker` pages — currently full client components with a fetch-on-mount waterfall; real performance debt, but not required for any MVP "Done when" checklist (see `TICKETS.md` post-MVP backlog, HAB-84).

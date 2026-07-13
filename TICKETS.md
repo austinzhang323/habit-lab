@@ -186,6 +186,31 @@ Phase 5  HAB-76 (early) → HAB-77 ;  HAB-78 (also needs HAB-60, HAB-67) ‖ HAB
 
 ---
 
+---
+
+# Post-MVP backlog (not part of the Phase 1–5 gate)
+
+Tickets here are real, scoped work but are **not required for the MVP's "Done when" checklists** in `ROADMAP.md` — don't block a phase exit on them, and don't parallelize them against a ticket that shares their files without checking the note below.
+
+### HAB-84 — Convert dashboard/habits/tracker to Server-Component shell + Client-Component island
+**Depends on:** HAB-65, HAB-71 · **Files:** `src/app/dashboard/page.tsx`, `src/app/habits/page.tsx`, `src/app/tracker/page.tsx`, `tests/component/pages/DashboardPage.test.tsx`, `tests/component/pages/HabitsPage.test.tsx`, `tests/component/pages/TrackerPage.test.tsx`
+
+**Why:** all three pages are marked `"use client"` top-to-bottom and fetch their data via `useEffect` + `fetch("/api/habits")` after mount, instead of using the App Router's Server-Component default to fetch during render. This costs a client-side mount→fetch waterfall (vs. data-ready-at-first-paint), and duplicates the same `useState(loading)` + `useEffect`-fetch + spinner shape across all three files. It does **not** by itself fix route-level auth gating — that's `middleware.ts` (HAB-65), independent of rendering strategy.
+
+**Do:**
+- Sequence *after* HAB-65 (so the session-scoped `habits-db.ts` data layer exists to fetch from) and *after* HAB-71 (so the "shared with me" read-only view's final shape lands first — otherwise this ticket and HAB-71 fight over the same three files, and HAB-71 would have to redo this ticket's split).
+- Each page becomes an `async` Server Component: read the session (or rely on `middleware.ts` having already redirected), fetch via `habits-db.ts` directly, pass the result as props.
+- Extract the interactive body into a `"use client"` child component that receives initial data as props instead of fetching it itself:
+  - `dashboard/page.tsx` — do this one first; it's read-only stats, no mutations, simplest case.
+  - `habits/page.tsx` — the create/edit/delete form + toast state becomes the client island.
+  - `tracker/page.tsx` — the completion grid + debounced optimistic-save logic (`gridRef`, `pendingUpdatesRef`, `saveTimerRef`) is irreducibly client-only; it moves into the island as-is, not "boilerplate" to eliminate.
+- Rewrite the three component tests in the same PR: render the client-island component directly with props instead of mocking `fetch` + advancing fake timers through a `useEffect`. Playwright E2E specs (`tests/e2e/dashboard.spec.ts` etc.) assert on final rendered state, not the fetch mechanism, so they need no changes.
+- If `middleware.ts` (HAB-65) already redirects unauthenticated requests for these routes, don't duplicate a second `getServerSession`-redirect inside the page — confirm the overlap before adding one.
+
+**Done when:** all three pages fetch server-side with no client-visible loading spinner on first paint; the three component test files pass against the new prop-driven island components; `lint`/`type-check`/`test`/`build` green; no page-level auth check duplicates what `middleware.ts` already does.
+
+---
+
 ## Handing a ticket to an agent — template
 
 > **Ticket:** HAB-XX <title>
