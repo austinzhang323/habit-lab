@@ -71,6 +71,24 @@ jobs:
           DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
           DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
 
+      - name: Apply migrations to the test database
+        run: npx prisma migrate deploy
+        env:
+          # migrate deploy runs DDL, so it connects via the DIRECT (postgres://)
+          # URL — prisma.config.ts reads env("DIRECT_DATABASE_URL") for the
+          # datasource. DATABASE_URL is passed for parity with migrate.yml.
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.TEST_DIRECT_DATABASE_URL }}
+
+      - name: Smoke-check the test database connection
+        run: npx tsx scripts/db-smoke.ts
+        env:
+          # Runs one real query through the app's own Accelerate path
+          # (src/lib/prisma.ts uses DATABASE_URL) to prove the connection is
+          # real, not just that the secrets are set.
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.TEST_DIRECT_DATABASE_URL }}
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
@@ -79,8 +97,8 @@ jobs:
         env:
           CI: true
           E2E_TEST: "1"
-          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
-          DIRECT_DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.TEST_DIRECT_DATABASE_URL }}
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: ci-e2e-nextauth-secret
           GOOGLE_CLIENT_ID: ci-e2e-google-client-id
