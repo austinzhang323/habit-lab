@@ -64,8 +64,8 @@ npm run type-check     # tsc --noEmit  (must be clean)
 npm run test           # vitest (unit + component)
 npm run test:e2e       # playwright
 npm run build          # next build
-npx prisma migrate dev # apply migrations locally
-npx prisma generate    # regenerate client after schema changes
+npm run db:migrate     # apply a schema change locally: migrate dev + generate
+npx prisma generate    # regenerate client alone (e.g. after pulling a teammate's schema)
 ```
 
 > If a script name here doesn't match `package.json`, trust `package.json` and fix this file.
@@ -84,6 +84,7 @@ npx prisma generate    # regenerate client after schema changes
 - Category/date/frequency conversion between API and DB goes through the mapper (`habit-mapper.ts`) — the single source of truth. Don't hand-roll `SCREAMING_SNAKE` conversions elsewhere.
 - Any schema change ships with a migration in the same PR. CI checks `prisma migrate status` for drift.
 - Use Prisma autoincrement IDs, not `Date.now()`.
+- Prisma 7 removed `migrate dev`'s automatic client regeneration (breaking change vs. earlier versions) — always run `npm run db:migrate`, never bare `npx prisma migrate dev`, or the generated client in `src/generated/prisma` goes stale silently until something throws `Unknown argument`.
 
 **Code style**
 - TypeScript strict; no `any` without a comment justifying it.
